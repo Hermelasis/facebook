@@ -29,9 +29,7 @@ class _StoriesBarState extends State<StoriesBar> {
       final fileName = '${DateTime.now().toIso8601String()}.$fileExt';
       final filePath = '$userId/$fileName';
 
-      await Supabase.instance.client.storage
-          .from('story-images')
-          .uploadBinary(
+      await Supabase.instance.client.storage.from('story-images').uploadBinary(
             filePath,
             bytes,
             fileOptions: const FileOptions(contentType: 'image/jpeg'),
@@ -63,10 +61,11 @@ class _StoriesBarState extends State<StoriesBar> {
   }
 
   void _openStory(List<Map<String, dynamic>> stories, int index) {
-     Navigator.push(
-       context,
-       MaterialPageRoute(builder: (_) => StoryViewer(stories: stories, initialIndex: index)),
-     );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (_) => StoryViewer(stories: stories, initialIndex: index)),
+    );
   }
 
   @override
@@ -75,16 +74,18 @@ class _StoriesBarState extends State<StoriesBar> {
       height: 200.0,
       color: Colors.white,
       child: StreamBuilder<List<Map<String, dynamic>>>(
-        // Fetch stories from last 24 hours
+        // Fetch stories from last 24 hours and include related profile data
         stream: Supabase.instance.client
             .from('stories')
-            .stream(primaryKey: ['id'])
-            .order('created_at', ascending: false),
-            // Note: Filter > 24h ideally should be done on query if .stream supports check, 
-            // but stream uses simple equality or requires specific filter syntax support depending on package version.
-            // We'll filter client side for stream simplicity if needed, but 'order' works.
-            // Supabase Stream filters are limited. Let's filter in the builder.
-            
+            .select(
+                'id, user_id, image_url, created_at, profiles(id, full_name, avatar_url)')
+            .order('created_at', ascending: false)
+            .stream(primaryKey: ['id']),
+        // Note: Filter > 24h ideally should be done on query if .stream supports check,
+        // but stream uses simple equality or requires specific filter syntax support depending on package version.
+        // We'll filter client side for stream simplicity if needed, but 'order' works.
+        // Supabase Stream filters are limited. Let's filter in the builder.
+
         builder: (context, snapshot) {
           // Filter 24h client side
           final allStories = snapshot.data ?? [];
@@ -93,7 +94,7 @@ class _StoriesBarState extends State<StoriesBar> {
             if (createdAt == null) return false;
             return DateTime.now().difference(createdAt).inHours < 24;
           }).toList();
-          
+
           return ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: 1 + stories.length, // +1 for "Add Story" card
@@ -109,7 +110,8 @@ class _StoriesBarState extends State<StoriesBar> {
                           child: Container(
                             color: Colors.black45,
                             child: const Center(
-                              child: CircularProgressIndicator(color: Colors.white),
+                              child: CircularProgressIndicator(
+                                  color: Colors.white),
                             ),
                           ),
                         ),
@@ -144,14 +146,13 @@ class StoryCard extends StatelessWidget {
         color: isAddStory ? Colors.white : Colors.grey[300],
         borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
-           BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.black12, blurRadius: 4, offset: const Offset(0, 2)),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12.0),
-        child: isAddStory
-            ? _buildAddStoryCard() 
-            : _buildStoryCard(), 
+        child: isAddStory ? _buildAddStoryCard() : _buildStoryCard(),
       ),
     );
   }
@@ -160,7 +161,7 @@ class StoryCard extends StatelessWidget {
     return Column(
       children: [
         Expanded(
-          flex: 3, 
+          flex: 3,
           child: Image.network(
             'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
             fit: BoxFit.cover,
@@ -168,7 +169,7 @@ class StoryCard extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2, 
+          flex: 2,
           child: Stack(
             alignment: Alignment.topCenter,
             children: [
@@ -188,18 +189,19 @@ class StoryCard extends StatelessWidget {
                 ),
               ),
               Transform.translate(
-                offset: const Offset(0, -16), 
+                offset: const Offset(0, -16),
                 child: Container(
-                  padding: const EdgeInsets.all(2), 
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle),
                   child: Container(
-                     width: 32,
-                     height: 32,
-                     decoration: const BoxDecoration(
-                       color: Color(0xFF1877F2),
-                       shape: BoxShape.circle,
-                     ),
-                     child: const Icon(Icons.add, color: Colors.white, size: 24),
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1877F2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 24),
                   ),
                 ),
               ),
@@ -238,26 +240,35 @@ class StoryCard extends StatelessWidget {
         Positioned(
           top: 8,
           left: 8,
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF1877F2), width: 3.0),
-              image: const DecorationImage(
-                image: NetworkImage('https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'),
-                fit: BoxFit.cover,
+          child: Builder(builder: (context) {
+            final profile = story!['profiles'];
+            final avatarUrl = profile != null ? profile['avatar_url'] : null;
+            return Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFF1877F2), width: 3.0),
+                image: DecorationImage(
+                  image: avatarUrl != null && avatarUrl.toString().isNotEmpty
+                      ? NetworkImage(avatarUrl)
+                      : const AssetImage('assets/avatar.png') as ImageProvider,
+                  fit: BoxFit.cover,
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ),
-        const Positioned(
+        Positioned(
           bottom: 8,
           left: 8,
           right: 8,
           child: Text(
-            'Friend',
-            style: TextStyle(
+            (story!['profiles'] != null &&
+                    story!['profiles']['full_name'] != null)
+                ? story!['profiles']['full_name']
+                : 'Friend',
+            style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 13.0,

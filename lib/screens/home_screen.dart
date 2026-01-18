@@ -41,18 +41,27 @@ class _FacebookHomeScreenState extends State<FacebookHomeScreen> {
                 floating: true,
                 snap: true,
                 actions: [
-                   Container(
-                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                     decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
-                     child: IconButton(icon: const Icon(Icons.search, color: Colors.black), onPressed: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
-                     }),
-                   ),
-                   Container(
-                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                     decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
-                     child: IconButton(icon: const Icon(Icons.menu, color: Colors.black), onPressed: (){}),
-                   ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                        color: Colors.grey[200], shape: BoxShape.circle),
+                    child: IconButton(
+                        icon: const Icon(Icons.search, color: Colors.black),
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SearchScreen()));
+                        }),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                        color: Colors.grey[200], shape: BoxShape.circle),
+                    child: IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.black),
+                        onPressed: () {}),
+                  ),
                 ],
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(50.0),
@@ -63,10 +72,14 @@ class _FacebookHomeScreenState extends State<FacebookHomeScreen> {
                       children: [
                         _buildNavIcon(Icons.home, true, badge: '15+'),
                         _buildNavIcon(Icons.people_outline, false),
-                        _buildNavIcon(Icons.chat_bubble_outline, false, badge: '15+'), // Messenger
-                        _buildNavIcon(Icons.ondemand_video, false, badge: '15+'),
-                        _buildNavIcon(Icons.notifications_none, false, badge: '15+'),
-                        _buildNavIcon(Icons.storefront_outlined, false, badge: '1'),
+                        _buildNavIcon(Icons.chat_bubble_outline, false,
+                            badge: '15+'), // Messenger
+                        _buildNavIcon(Icons.ondemand_video, false,
+                            badge: '15+'),
+                        _buildNavIcon(Icons.notifications_none, false,
+                            badge: '15+'),
+                        _buildNavIcon(Icons.storefront_outlined, false,
+                            badge: '1'),
                       ],
                     ),
                   ),
@@ -81,22 +94,19 @@ class _FacebookHomeScreenState extends State<FacebookHomeScreen> {
               const SizedBox(height: 10),
               const StoriesBar(),
               const SizedBox(height: 10),
-              
               StreamBuilder<List<Map<String, dynamic>>>(
-                stream: Supabase.instance.client
-                    .from('posts')
-                    .stream(primaryKey: ['id'])
-                    .order('created_at', ascending: false),
+                stream: Supabase.instance.client.from('posts').stream(
+                    primaryKey: ['id']).order('created_at', ascending: false),
                 builder: (context, snapshot) {
                   final posts = snapshot.data ?? [];
-                  
+
                   if (posts.isEmpty) {
-                     return const Center(
-                       child: Padding(
-                         padding: EdgeInsets.all(20.0),
-                         child: Text("No posts yet. Be the first to post!"),
-                       ),
-                     );
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text("No posts yet. Be the first to post!"),
+                      ),
+                    );
                   }
 
                   return ListView.builder(
@@ -120,10 +130,9 @@ class _FacebookHomeScreenState extends State<FacebookHomeScreen> {
     return Stack(
       children: [
         IconButton(
-          icon: Icon(icon, 
-            color: isActive ? const Color(0xFF1877F2) : Colors.grey[600], 
-            size: 28
-          ),
+          icon: Icon(icon,
+              color: isActive ? const Color(0xFF1877F2) : Colors.grey[600],
+              size: 28),
           onPressed: () {},
         ),
         if (badge != null)
@@ -165,29 +174,37 @@ class CreatePostBar extends StatelessWidget {
       child: Row(
         children: [
           GestureDetector(
-             onTap: () {
-               Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
-             },
-             child: const CircleAvatar(
-               radius: 20.0,
-               backgroundImage: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'),
-               backgroundColor: Colors.grey,
-             ),
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ProfileScreen()));
+            },
+            child: const CircleAvatar(
+              radius: 20.0,
+              backgroundImage: AssetImage('assets/avatar.png'),
+              backgroundColor: Colors.grey,
+            ),
           ),
           const SizedBox(width: 8.0),
           Expanded(
             child: GestureDetector(
               onTap: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatePostScreen()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const CreatePostScreen()));
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 decoration: BoxDecoration(
-                  color: Colors.white, 
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(30.0),
-                  border: Border.all(color: Colors.grey[300]!), 
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: const Text('What\'s on your mind?', style: TextStyle(color: Colors.black54)),
+                child: const Text('What\'s on your mind?',
+                    style: TextStyle(color: Colors.black54)),
               ),
             ),
           ),
@@ -195,8 +212,9 @@ class CreatePostBar extends StatelessWidget {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               const Icon(Icons.photo, color: Colors.green, size: 28),
-               const Text("Photo", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))
+              const Icon(Icons.photo, color: Colors.green, size: 28),
+              const Text("Photo",
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))
             ],
           ),
         ],

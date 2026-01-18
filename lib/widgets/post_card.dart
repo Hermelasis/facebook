@@ -15,14 +15,16 @@ class _PostWidgetState extends State<PostWidget> {
   bool _isLiked = false;
   int _likeCount = 0;
   int _commentCount = 0;
-  final String _userId = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
+  final String _userId =
+      Supabase.instance.client.auth.currentUser?.id ?? 'anon';
 
   @override
   void initState() {
     super.initState();
     // Prioritize 'profiles' join if available, else fetch
-    if (widget.post['profiles'] != null && widget.post['profiles']['full_name'] != null) {
-       _userName = widget.post['profiles']['full_name'];
+    if (widget.post['profiles'] != null &&
+        widget.post['profiles']['full_name'] != null) {
+      _userName = widget.post['profiles']['full_name'];
     } else {
       _fetchUserProfile();
     }
@@ -32,13 +34,13 @@ class _PostWidgetState extends State<PostWidget> {
   Future<void> _fetchUserProfile() async {
     try {
       final userId = widget.post['user_id'];
-      if (userId != null && userId is String) { 
+      if (userId != null && userId is String) {
         final data = await Supabase.instance.client
             .from('profiles')
             .select('full_name')
             .eq('id', userId)
-            .maybeSingle(); 
-        
+            .maybeSingle();
+
         if (data != null && data['full_name'] != null) {
           if (mounted) {
             setState(() {
@@ -55,15 +57,21 @@ class _PostWidgetState extends State<PostWidget> {
   Future<void> _fetchInteractions() async {
     final dynamic postId = widget.post['id'];
     try {
-      final likesList = await Supabase.instance.client.from('likes').select('user_id').eq('post_id', postId);
-      final commentsList = await Supabase.instance.client.from('comments').select('id').eq('post_id', postId);
+      final likesList = await Supabase.instance.client
+          .from('likes')
+          .select('user_id')
+          .eq('post_id', postId);
+      final commentsList = await Supabase.instance.client
+          .from('comments')
+          .select('id')
+          .eq('post_id', postId);
 
       if (mounted) {
-         setState(() {
-           _likeCount = likesList.length;
-           _commentCount = commentsList.length;
-           _isLiked = likesList.any((l) => l['user_id'] == _userId);
-         });
+        setState(() {
+          _likeCount = likesList.length;
+          _commentCount = commentsList.length;
+          _isLiked = likesList.any((l) => l['user_id'] == _userId);
+        });
       }
     } catch (e) {
       print('Error interactions: $e');
@@ -72,7 +80,7 @@ class _PostWidgetState extends State<PostWidget> {
 
   Future<void> _toggleLike() async {
     final dynamic postId = widget.post['id'];
-    
+
     // Optimistic Update
     setState(() {
       _isLiked = !_isLiked;
@@ -95,10 +103,11 @@ class _PostWidgetState extends State<PostWidget> {
       // Revert if error
       if (mounted) {
         setState(() {
-           _isLiked = !_isLiked;
-           _likeCount += _isLiked ? 1 : -1;
+          _isLiked = !_isLiked;
+          _likeCount += _isLiked ? 1 : -1;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error liking: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error liking: $e')));
       }
     }
   }
@@ -108,7 +117,7 @@ class _PostWidgetState extends State<PostWidget> {
       context: context,
       isScrollControlled: true,
       builder: (context) => CommentsSheet(postId: widget.post['id']),
-    ).then((_) => _fetchInteractions()); 
+    ).then((_) => _fetchInteractions());
   }
 
   void _sharePost() {
@@ -146,15 +155,18 @@ class _PostWidgetState extends State<PostWidget> {
                       Row(
                         children: [
                           Text(
-                            widget.post['created_at'] != null 
-                                ? widget.post['created_at'].toString().substring(0, 10) 
-                                : 'Just now', 
+                            widget.post['created_at'] != null
+                                ? widget.post['created_at']
+                                    .toString()
+                                    .substring(0, 10)
+                                : 'Just now',
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 12.0,
                             ),
                           ),
-                          const Icon(Icons.public, size: 12.0, color: Colors.grey),
+                          const Icon(Icons.public,
+                              size: 12.0, color: Colors.grey),
                         ],
                       ),
                     ],
@@ -171,13 +183,21 @@ class _PostWidgetState extends State<PostWidget> {
             ),
           ),
           if (widget.post['image_url'] != null)
-             AspectRatio(
+            AspectRatio(
               aspectRatio: 1.0,
               child: Image.network(
-                widget.post['image_url'], 
+                widget.post['image_url'],
                 fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => const Center(child: Icon(Icons.error)),
+                errorBuilder: (c, e, s) => Image.asset(
+                    'assets/post_placeholder.png',
+                    fit: BoxFit.cover),
               ),
+            )
+          else
+            AspectRatio(
+              aspectRatio: 1.0,
+              child:
+                  Image.asset('assets/post_placeholder.png', fit: BoxFit.cover),
             ),
           Padding(
             padding: const EdgeInsets.all(12.0),
@@ -186,13 +206,15 @@ class _PostWidgetState extends State<PostWidget> {
               children: [
                 Row(
                   children: [
-                     Container(
-                       padding: const EdgeInsets.all(4.0),
-                       decoration: const BoxDecoration(color: Color(0xFF1877F2), shape: BoxShape.circle),
-                       child: const Icon(Icons.thumb_up, size: 10.0, color: Colors.white),
-                     ),
-                     const SizedBox(width: 4.0),
-                     Text('$_likeCount'),
+                    Container(
+                      padding: const EdgeInsets.all(4.0),
+                      decoration: const BoxDecoration(
+                          color: Color(0xFF1877F2), shape: BoxShape.circle),
+                      child: const Icon(Icons.thumb_up,
+                          size: 10.0, color: Colors.white),
+                    ),
+                    const SizedBox(width: 4.0),
+                    Text('$_likeCount'),
                   ],
                 ),
                 Text('$_commentCount Comments'),
@@ -200,7 +222,7 @@ class _PostWidgetState extends State<PostWidget> {
             ),
           ),
           const Divider(height: 10.0, thickness: 0.5),
-           SizedBox(
+          SizedBox(
             height: 40.0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -264,7 +286,7 @@ class ActionItem extends StatelessWidget {
 class CommentsSheet extends StatefulWidget {
   final dynamic postId;
   const CommentsSheet({super.key, required this.postId});
-  
+
   @override
   State<CommentsSheet> createState() => _CommentsSheetState();
 }
@@ -273,47 +295,55 @@ class _CommentsSheetState extends State<CommentsSheet> {
   final _commentController = TextEditingController();
 
   Future<void> _postComment() async {
-     final text = _commentController.text.trim();
-     if(text.isEmpty) return;
-     
-     final userId = Supabase.instance.client.auth.currentUser!.id;
-     await Supabase.instance.client.from('comments').insert({
-       'content': text,
-       'post_id': widget.postId,
-       'user_id': userId,
-     });
-     _commentController.clear();
+    final text = _commentController.text.trim();
+    if (text.isEmpty) return;
+
+    final userId = Supabase.instance.client.auth.currentUser!.id;
+    await Supabase.instance.client.from('comments').insert({
+      'content': text,
+      'post_id': widget.postId,
+      'user_id': userId,
+    });
+    _commentController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       height: MediaQuery.of(context).size.height * 0.7,
       child: Column(
         children: [
           const Padding(
             padding: EdgeInsets.all(12.0),
-            child: Text("Comments", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text("Comments",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>> (
-              stream: Supabase.instance.client.from('comments').stream(primaryKey: ['id']).eq('post_id', widget.postId).order('created_at'),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client
+                  .from('comments')
+                  .stream(primaryKey: ['id'])
+                  .eq('post_id', widget.postId)
+                  .order('created_at'),
               builder: (context, snapshot) {
-                 if(!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                 final comments = snapshot.data!;
-                 if(comments.isEmpty) return const Center(child: Text("No comments yet."));
-                 
-                 return ListView.builder(
-                   itemCount: comments.length,
-                   itemBuilder: (context, index) {
-                     final c = comments[index];
-                     return ListTile(
-                       leading: const CircleAvatar(child: Icon(Icons.person)),
-                       title: Text(c['content']), 
-                     );
-                   },
-                 );
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
+                final comments = snapshot.data!;
+                if (comments.isEmpty)
+                  return const Center(child: Text("No comments yet."));
+
+                return ListView.builder(
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final c = comments[index];
+                    return ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(c['content']),
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -326,7 +356,8 @@ class _CommentsSheetState extends State<CommentsSheet> {
                     controller: _commentController,
                     decoration: const InputDecoration(
                       hintText: 'Write a comment...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(20))),
                       contentPadding: EdgeInsets.symmetric(horizontal: 16),
                     ),
                   ),
