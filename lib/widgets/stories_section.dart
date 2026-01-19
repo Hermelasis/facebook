@@ -73,20 +73,22 @@ class _StoriesBarState extends State<StoriesBar> {
     return Container(
       height: 200.0,
       color: Colors.white,
-      child: StreamBuilder<List<Map<String, dynamic>>>(
+      child: FutureBuilder<List<Map<String, dynamic>>>(
         // Fetch stories from last 24 hours and include related profile data
-        stream: Supabase.instance.client
+        future: Supabase.instance.client
             .from('stories')
             .select(
                 'id, user_id, image_url, created_at, profiles(id, full_name, avatar_url)')
-            .order('created_at', ascending: false)
-            .stream(primaryKey: ['id']),
+            .order('created_at', ascending: false),
         // Note: Filter > 24h ideally should be done on query if .stream supports check,
         // but stream uses simple equality or requires specific filter syntax support depending on package version.
         // We'll filter client side for stream simplicity if needed, but 'order' works.
         // Supabase Stream filters are limited. Let's filter in the builder.
 
         builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
           // Filter 24h client side
           final allStories = snapshot.data ?? [];
           final stories = allStories.where((s) {
@@ -158,15 +160,24 @@ class StoryCard extends StatelessWidget {
   }
 
   Widget _buildAddStoryCard() {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+
     return Column(
       children: [
         Expanded(
           flex: 3,
-          child: Image.network(
-            'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-            fit: BoxFit.cover,
-            width: double.infinity,
-          ),
+          child: userId == null
+              ? Container(color: Colors.grey[200], child: const Icon(Icons.person, size: 50, color: Colors.grey))
+              : FutureBuilder<Map<String, dynamic>?>(
+                  future: Supabase.instance.client.from('profiles').select('avatar_url').eq('id', userId).maybeSingle(),
+                  builder: (context, snapshot) {
+                    final avatarUrl = snapshot.data?['avatar_url'];
+                    if (avatarUrl != null && avatarUrl.toString().isNotEmpty) {
+                      return Image.network(avatarUrl, fit: BoxFit.cover, width: double.infinity);
+                    }
+                    return Container(color: Colors.grey[200], child: const Icon(Icons.person, size: 50, color: Colors.grey));
+                  },
+                ),
         ),
         Expanded(
           flex: 2,
@@ -235,8 +246,6 @@ class StoryCard extends StatelessWidget {
             ),
           ),
         ),
-        // [TODO] To make this real, we should fetch the user avatar using user_id
-        // For now, let's just use a placeholder or if we joined tables.
         Positioned(
           top: 8,
           left: 8,
@@ -247,14 +256,14 @@ class StoryCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
+                color: Colors.grey[300],
                 shape: BoxShape.circle,
                 border: Border.all(color: const Color(0xFF1877F2), width: 3.0),
-                image: DecorationImage(
-                  image: avatarUrl != null && avatarUrl.toString().isNotEmpty
-                      ? NetworkImage(avatarUrl)
-                      : const AssetImage('assets/avatar.png') as ImageProvider,
-                  fit: BoxFit.cover,
-                ),
+              ),
+              child: ClipOval(
+                child: (avatarUrl != null && avatarUrl.toString().isNotEmpty)
+                    ? Image.network(avatarUrl, fit: BoxFit.cover)
+                    : const Icon(Icons.person, color: Colors.white, size: 20),
               ),
             );
           }),

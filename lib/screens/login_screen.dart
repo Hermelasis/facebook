@@ -3,6 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'profile_screen.dart'; // Redirect to Profile
 import 'home_screen.dart'; // Still needed? Maybe not
 import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'forgot_password_screen.dart';
+import 'update_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,41 +32,40 @@ class _LoginScreenState extends State<LoginScreen> {
         // Ensure we have a profiles row for this user so UI shows correct name/avatar
         try {
           final user = session.user;
-          if (user != null) {
-            final fullName = (user.userMetadata != null &&
-                    (user.userMetadata as Map).containsKey('full_name'))
-                ? user.userMetadata['full_name']
-                : ((user.userMetadata != null &&
-                        (user.userMetadata as Map).containsKey('name'))
-                    ? user.userMetadata['name']
-                    : user.email ?? '');
+          final fullName = user.userMetadata?['full_name'] ??
+              user.userMetadata?['name'] ??
+              user.email ??
+              '';
 
-            final avatar = (user.userMetadata != null &&
-                    (user.userMetadata as Map).containsKey('avatar_url'))
-                ? user.userMetadata['avatar_url']
-                : ((user.userMetadata != null &&
-                        (user.userMetadata as Map).containsKey('picture'))
-                    ? user.userMetadata['picture']
-                    : null);
+          final avatar = user.userMetadata?['avatar_url']?.toString() ??
+              user.userMetadata?['picture']?.toString();
 
-            final profileRow = {
-              'id': user.id,
-              'full_name': fullName,
-            };
-            if (avatar != null && (avatar as String).isNotEmpty)
-              profileRow['avatar_url'] = avatar;
-
-            await Supabase.instance.client.from('profiles').upsert(profileRow);
+          final profileRow = {
+            'id': user.id,
+            'full_name': fullName,
+          };
+          if (avatar != null && avatar.isNotEmpty) {
+            profileRow['avatar_url'] = avatar;
           }
+
+          await Supabase.instance.client.from('profiles').upsert(profileRow);
         } catch (e) {
           // ignore upsert errors, still navigate
         }
 
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const ProfileScreen()),
-          );
+          if (data.event == AuthChangeEvent.passwordRecovery) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const UpdatePasswordScreen()),
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            );
+          }
         }
       }
     });
@@ -230,7 +232,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16.0),
                 TextButton(
                   onPressed: () {
-                    _showMessage('Forgot password not implemented');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ForgotPasswordScreen()),
+                    );
                   },
                   child: const Text('Forgot Password?',
                       style: TextStyle(color: Colors.black54)),
@@ -297,8 +303,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _onGoogleSignIn() async {
     setState(() => _isLoading = true);
     try {
-      await Supabase.instance.client.auth
-          .signInWithOAuth(provider: Provider.google);
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+      );
       // Supabase will handle redirect/flow. Auth state listener will navigate on success.
     } on AuthException catch (e) {
       _showMessage(e.message);
@@ -391,8 +398,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Future<void> _onGoogleSignIn() async {
     setState(() => _isLoading = true);
     try {
-      await Supabase.instance.client.auth
-          .signInWithOAuth(provider: Provider.google);
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+      );
       // On success, Supabase auth listener (if present) will handle navigation.
     } on AuthException catch (e) {
       _showMessage(e.message);

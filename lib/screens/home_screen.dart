@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:share_plus/share_plus.dart';
 import 'profile_screen.dart';
 import 'create_post_screen.dart';
 import 'search_screen.dart';
@@ -94,9 +92,11 @@ class _FacebookHomeScreenState extends State<FacebookHomeScreen> {
               const SizedBox(height: 10),
               const StoriesBar(),
               const SizedBox(height: 10),
-              StreamBuilder<List<Map<String, dynamic>>>(
-                stream: Supabase.instance.client.from('posts').stream(
-                    primaryKey: ['id']).order('created_at', ascending: false),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: Supabase.instance.client
+                    .from('posts')
+                    .select()
+                    .order('created_at', ascending: false),
                 builder: (context, snapshot) {
                   final posts = snapshot.data ?? [];
 
@@ -168,6 +168,8 @@ class CreatePostBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       color: Colors.white,
@@ -176,24 +178,47 @@ class CreatePostBar extends StatelessWidget {
           GestureDetector(
             onTap: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ProfileScreen()));
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
             },
-            child: const CircleAvatar(
-              radius: 20.0,
-              backgroundImage: AssetImage('assets/avatar.png'),
-              backgroundColor: Colors.grey,
-            ),
+            child: userId == null
+                ? const CircleAvatar(
+                    radius: 20.0,
+                    backgroundColor: Colors.grey,
+                    child: Icon(Icons.person, color: Colors.white),
+                  )
+                : FutureBuilder<Map<String, dynamic>?>(
+                    future: Supabase.instance.client
+                        .from('profiles')
+                        .select('avatar_url')
+                        .eq('id', userId)
+                        .maybeSingle(),
+                    builder: (context, snapshot) {
+                      final avatarUrl = snapshot.data?['avatar_url'];
+                      return CircleAvatar(
+                        radius: 20.0,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: (avatarUrl != null &&
+                                avatarUrl.toString().isNotEmpty)
+                            ? NetworkImage(avatarUrl)
+                            : null,
+                        child: (avatarUrl == null ||
+                                avatarUrl.toString().isEmpty)
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
+                      );
+                    },
+                  ),
           ),
           const SizedBox(width: 8.0),
           Expanded(
             child: GestureDetector(
               onTap: () {
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const CreatePostScreen()));
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+                );
               },
               child: Container(
                 padding:
@@ -211,9 +236,9 @@ class CreatePostBar extends StatelessWidget {
           const SizedBox(width: 8.0),
           Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.photo, color: Colors.green, size: 28),
-              const Text("Photo",
+            children: const [
+              Icon(Icons.photo, color: Colors.green, size: 28),
+              Text("Photo",
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold))
             ],
           ),

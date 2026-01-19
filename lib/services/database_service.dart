@@ -120,7 +120,7 @@ class DatabaseService {
            friends.add({
              'id': f['receiver_id'],
              'name': f['profiles']['full_name'],
-             'img': f['profiles']['avatar_url'] ?? 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+             'img': f['profiles']['avatar_url'],
            });
          }
       }
@@ -129,7 +129,7 @@ class DatabaseService {
            friends.add({
              'id': f['requester_id'],
              'name': f['profiles']['full_name'],
-             'img': f['profiles']['avatar_url'] ?? 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+             'img': f['profiles']['avatar_url'],
            });
          }
       }

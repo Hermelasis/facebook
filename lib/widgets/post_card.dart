@@ -12,6 +12,7 @@ class PostWidget extends StatefulWidget {
 
 class _PostWidgetState extends State<PostWidget> {
   String _userName = 'Facebook User';
+  String? _avatarUrl;
   bool _isLiked = false;
   int _likeCount = 0;
   int _commentCount = 0;
@@ -22,9 +23,9 @@ class _PostWidgetState extends State<PostWidget> {
   void initState() {
     super.initState();
     // Prioritize 'profiles' join if available, else fetch
-    if (widget.post['profiles'] != null &&
-        widget.post['profiles']['full_name'] != null) {
-      _userName = widget.post['profiles']['full_name'];
+    if (widget.post['profiles'] != null) {
+      _userName = widget.post['profiles']['full_name'] ?? 'Facebook User';
+      _avatarUrl = widget.post['profiles']['avatar_url'];
     } else {
       _fetchUserProfile();
     }
@@ -37,14 +38,15 @@ class _PostWidgetState extends State<PostWidget> {
       if (userId != null && userId is String) {
         final data = await Supabase.instance.client
             .from('profiles')
-            .select('full_name')
+            .select('full_name, avatar_url')
             .eq('id', userId)
             .maybeSingle();
 
-        if (data != null && data['full_name'] != null) {
+        if (data != null) {
           if (mounted) {
             setState(() {
-              _userName = data['full_name'];
+              _userName = data['full_name'] ?? 'Facebook User';
+              _avatarUrl = data['avatar_url'];
             });
           }
         }
@@ -138,10 +140,15 @@ class _PostWidgetState extends State<PostWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 12.0),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 20.0,
-                  backgroundColor: Colors.blueGrey,
-                  child: Icon(Icons.person, color: Colors.white),
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+                      ? NetworkImage(_avatarUrl!)
+                      : null,
+                  child: (_avatarUrl == null || _avatarUrl!.isEmpty)
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
                 ),
                 const SizedBox(width: 8.0),
                 Expanded(
@@ -321,26 +328,41 @@ class _CommentsSheetState extends State<CommentsSheet> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: Supabase.instance.client
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: Supabase.instance.client
                   .from('comments')
-                  .stream(primaryKey: ['id'])
+                  .select('*, profiles(full_name, avatar_url)')
                   .eq('post_id', widget.postId)
                   .order('created_at'),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
                 final comments = snapshot.data!;
-                if (comments.isEmpty)
+                if (comments.isEmpty) {
                   return const Center(child: Text("No comments yet."));
+                }
 
                 return ListView.builder(
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final c = comments[index];
+                    final profile = c['profiles'];
+                    final avatarUrl = profile != null ? profile['avatar_url'] : null;
+                    final name = profile != null ? profile['full_name'] : 'User';
+
                     return ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.person)),
-                      title: Text(c['content']),
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: (avatarUrl != null && avatarUrl.toString().isNotEmpty)
+                            ? NetworkImage(avatarUrl)
+                            : null,
+                        child: (avatarUrl == null || avatarUrl.toString().isEmpty)
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
+                      ),
+                      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      subtitle: Text(c['content']),
                     );
                   },
                 );

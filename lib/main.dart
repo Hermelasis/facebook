@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'constants.dart';
 import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 import 'dart:async';
 
 void main() async {
@@ -12,9 +13,9 @@ void main() async {
       url: AppConstants.supabaseUrl,
       anonKey: AppConstants.supabaseAnonKey,
     );
-    print('Supabase initialized successfully');
+    debugPrint('Supabase initialized successfully');
   } catch (e) {
-    print('Failed to initialize Supabase: $e');
+    debugPrint('Failed to initialize Supabase: $e');
   }
 
   runApp(const MyApp());
@@ -27,7 +28,17 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      title: 'Facebook Clone',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF0F2F5),
+      ),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const FacebookHomeScreen(),
+      },
     );
   }
 }

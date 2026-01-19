@@ -26,15 +26,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Intent filter to catch OAuth redirect (custom scheme). 
-                 Configure this scheme in your Supabase OAuth redirect URLs as:
-                 com.example.facebook://login-callback
-                 and set the same redirectTo when calling signInWithOAuth if needed. -->
+            <!-- Supabase OAuth deep link for Google sign-in -->
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.example.facebook" android:host="login-callback" />
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="io.supabase.flutter"
+                    android:host="login-callback"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

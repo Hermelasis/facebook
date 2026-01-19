@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.facebook"
+    namespace = "com.hermela.facebook"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
